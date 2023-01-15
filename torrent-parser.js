@@ -17,7 +17,6 @@ export function size(torrent) {
 
   const bignum = BigInt(size)
   buf.writeBigInt64BE(bignum)
-  console.log('SIZE: ', { size, bignum, buf })
 
   return buf
 }
@@ -25,7 +24,6 @@ export function size(torrent) {
 export function infoHash(torrent) {
   const info = bencode.encode(torrent.info)
   const hash = createHash('sha1').update(info).digest()
-  console.log(hash)
 
   return hash
 }

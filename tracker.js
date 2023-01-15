@@ -1,14 +1,13 @@
 import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
-import dgram from 'node:dgram'
+import { createSocket } from 'node:dgram'
 import { parse } from 'node:url'
 import { infoHash, size } from './torrent-parser.js'
 import { genId } from './util.js'
 
 export function getPeers(torrent, callback) {
-  const socket = dgram.createSocket('udp4')
+  const socket = createSocket('udp4')
   const url = torrent.announce.toString('utf8')
-  console.log({url})
   const connReq = buildConnReq()
 
   udpSend(socket, connReq, url)
@@ -18,7 +17,6 @@ export function getPeers(torrent, callback) {
     if (responseType === 'connect') {
       const connResp = parseConnResp(response)
       const announceReq = buildAnnounceReq(connResp.connectionId, torrent)
-      console.log(announceReq)
       udpSend(socket, announceReq, url)
     } else if (responseType === 'announce') {
       const announceResp = parseAnnounceResp(response)
@@ -31,16 +29,22 @@ export function getPeers(torrent, callback) {
   socket.on('connect', console.log.bind(null, 'CONNECT: '))
 }
 
-export function udpSend(socket, message, rawUrl, callback = console.log.bind(null, 'UDP SEND: ')) {
-  const { port, host } = parse(rawUrl)
-  socket.send(message, 0, message.length, port, host, callback)
+export function udpSend(
+  socket,
+  message,
+  rawUrl,
+  callback = console.log.bind(null, 'UDP SEND: ')
+) {
+  const { port, hostname, protocol } = parse(rawUrl)
+  console.log({ rawUrl, hostname, port, protocol })
+  socket.send(message, 0, message.length, port, hostname, callback)
 }
 
 export function respType(resp) {
   const action = resp.readUInt32BE(0)
   const responseTypeMap = {
     0: 'connect',
-    1: 'announce'
+    1: 'announce',
   }
 
   return responseTypeMap[action]
@@ -52,7 +56,6 @@ export function buildConnReq() {
   buf.writeUInt32BE(0x27101980, 4)
   buf.writeUInt32BE(0, 8)
   randomBytes(4).copy(buf, 12)
-  console.log('CONNECTION REQUEST: ', buf)
 
   return buf
 }
@@ -61,7 +64,7 @@ export function parseConnResp(resp) {
   return {
     action: resp.readUInt32BE(0),
     transactionId: resp.readUInt32BE(4),
-    connectionIf: resp.slice(8),
+    connectionId: resp.slice(8),
   }
 }
 
@@ -93,9 +96,7 @@ export function buildAnnounceReq(connId, torrent, port = 6881) {
   // num want
   buf.writeInt32BE(-1, 92)
   // port
-  buf.writeUInt32BE(port, 96)
-
-  console.log('ANNOUNCE BUFFER: ', buf)
+  buf.writeUInt16BE(port, 96)
 
   return buf
 }
@@ -110,7 +111,6 @@ function group(iterable, groupSize) {
 }
 
 export function parseAnnounceResp(resp) {
-  console.log('ANNOUNCE RESPONSE GROUPS: ', group(resp.slice(0, 4)))
   return {
     action: resp.readUInt32BE(0),
     transactionId: resp.readUInt32BE(4),
@@ -118,7 +118,7 @@ export function parseAnnounceResp(resp) {
     seeders: resp.readUInt32BE(12),
     peers: group(resp.slice(20), 6).map((address) => ({
       ip: address.slice(0, 4).join('.'),
-      port: address.readUInt32BE(4),
+      port: address.readUInt16BE(4),
     })),
   }
 }
