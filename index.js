@@ -1,10 +1,9 @@
 'use strict'
 
-import { open, size } from './torrent-parser.js'
-import { getPeers } from './tracker.js'
+import { open } from './src/torrent-parser.js'
+import { downloadTorrent } from './src/download.js'
 
-const torrent = open('test2')
+const torrentPath = process.argv[2]
+const torrent = open(torrentPath)
 
-getPeers(torrent, (peers) => {
-  console.log('PEERS: ', peers)
-})
+downloadTorrent(torrent)
