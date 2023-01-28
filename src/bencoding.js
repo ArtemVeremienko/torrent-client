@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
 import process from 'node:process'
 
+/**
+ * @enum {number}
+ */
 const CharCodes = {
   d: 'd'.charCodeAt(0),
   e: 'e'.charCodeAt(0),
@@ -10,16 +13,21 @@ const CharCodes = {
 }
 
 class BEncoding {
-  dictionaryStart = CharCodes.d
-  dictionaryEnd = CharCodes.e
-  listStart = CharCodes.l
-  listEnd = CharCodes.e
-  numberStart = CharCodes.i
-  numberEnd = CharCodes.e
-  byteArrayDivider = CharCodes[':']
+  #dictionaryStart = CharCodes.d
+  #dictionaryEnd = CharCodes.e
+  #listStart = CharCodes.l
+  #listEnd = CharCodes.e
+  #numberStart = CharCodes.i
+  #numberEnd = CharCodes.e
+  #byteArrayDivider = CharCodes[':']
 
+  #encoding
+
+  /**
+   * @param {string} encoding - for decoding string. `Buffer` by default.
+   */
   constructor(encoding) {
-    this.encoding = encoding
+    this.#encoding = encoding
   }
 
   /**
@@ -40,11 +48,11 @@ class BEncoding {
    */
   decodeNextObject(iterator, current) {
     switch (current) {
-      case this.dictionaryStart:
+      case this.#dictionaryStart:
         return this.decodeDictionary(iterator)
-      case this.listStart:
+      case this.#listStart:
         return this.decodeList(iterator)
-      case this.numberStart:
+      case this.#numberStart:
         return this.decodeNumber(iterator)
       default:
         return this.decodeByteArray(iterator, current)
@@ -73,7 +81,7 @@ class BEncoding {
     const stringArr = []
 
     for (const byte of iterator) {
-      if (byte === this.numberEnd) break
+      if (byte === this.#numberEnd) break
       stringArr.push(byte)
     }
 
@@ -89,7 +97,7 @@ class BEncoding {
     const stringLength = [current]
 
     for (const byte of iterator) {
-      if (byte === this.byteArrayDivider) break
+      if (byte === this.#byteArrayDivider) break
       stringLength.push(byte)
     }
 
@@ -103,7 +111,7 @@ class BEncoding {
 
     const buf = Buffer.from(stringArr)
 
-    return this.encoding ? buf.toString(this.encoding) : buf
+    return this.#encoding ? buf.toString(this.#encoding) : buf
   }
 
   /**
@@ -115,7 +123,7 @@ class BEncoding {
     const arr = []
 
     for (const byte of iterator) {
-      if (byte === this.listEnd) break
+      if (byte === this.#listEnd) break
       arr.push(this.decodeNextObject(iterator, byte))
     }
 
@@ -131,7 +139,7 @@ class BEncoding {
     const obj = {}
 
     for (const byte of iterator) {
-      if (byte === this.dictionaryEnd) break
+      if (byte === this.#dictionaryEnd) break
       const objKey = this.decodeByteArray(iterator, byte).toString('utf8')
       const { value: nextValue } = iterator.next()
       const objValue = this.decodeNextObject(iterator, nextValue)
@@ -141,17 +149,19 @@ class BEncoding {
     return obj
   }
 }
-const decoder = new BEncoding()
 
+const decoder = new BEncoding('utf8')
+
+console.group('Torrents')
 console.log(decoder.decodeFile(process.argv[2]))
+console.log(decoder.decodeFile(process.argv[2]))
+console.groupEnd()
 
-/*
-console.log('string', decoder.decode(Buffer.from('8:announce')).toString())
+console.group('Tests')
+console.log('string', decoder.decode(Buffer.from('8:announce')))
 console.log(
   'string',
-  decoder
-    .decode(Buffer.from('33:http://192.168.1.74:6969/announce7:comment'))
-    .toString()
+  decoder.decode(Buffer.from('33:http://192.168.1.74:6969/announce7:comment'))
 )
 
 console.log('integer', decoder.decode(Buffer.from('i32768e')))
@@ -174,4 +184,4 @@ console.log(
   )
 )
 console.log('dictionary', decoder.decode(Buffer.from('de')))
-*/
+console.groupEnd()
