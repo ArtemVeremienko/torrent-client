@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import process from 'node:process'
 
 const CharCodes = {
   d: 'd'.charCodeAt(0),
@@ -16,6 +17,10 @@ class BEncoding {
   numberStart = CharCodes.i
   numberEnd = CharCodes.e
   byteArrayDivider = CharCodes[':']
+
+  constructor(encoding) {
+    this.encoding = encoding
+  }
 
   /**
    *
@@ -67,10 +72,9 @@ class BEncoding {
   decodeNumber(iterator) {
     const stringArr = []
 
-    while (true) {
-      const { value } = iterator.next()
-      if (value === this.numberEnd) break
-      stringArr.push(value)
+    for (const byte of iterator) {
+      if (byte === this.numberEnd) break
+      stringArr.push(byte)
     }
 
     return Number(Buffer.from(stringArr))
@@ -84,20 +88,22 @@ class BEncoding {
   decodeByteArray(iterator, current) {
     const stringLength = [current]
 
-    while (true) {
-      const { value } = iterator.next()
-      if (value === this.byteArrayDivider) break
-      stringLength.push(value)
+    for (const byte of iterator) {
+      if (byte === this.byteArrayDivider) break
+      stringLength.push(byte)
     }
 
-    const string = []
+    const stringArr = []
     const length = Number(Buffer.from(stringLength))
 
     for (let i = 0; i < length; i++) {
-      string.push(iterator.next().value)
+      const { value } = iterator.next()
+      stringArr.push(value)
     }
 
-    return Buffer.from(string)
+    const buf = Buffer.from(stringArr)
+
+    return this.encoding ? buf.toString(this.encoding) : buf
   }
 
   /**
@@ -108,10 +114,9 @@ class BEncoding {
   decodeList(iterator) {
     const arr = []
 
-    while (true) {
-      const { value } = iterator.next()
-      if (value === this.listEnd) break
-      arr.push(this.decodeNextObject(iterator, value))
+    for (const byte of iterator) {
+      if (byte === this.listEnd) break
+      arr.push(this.decodeNextObject(iterator, byte))
     }
 
     return arr
@@ -125,10 +130,9 @@ class BEncoding {
   decodeDictionary(iterator) {
     const obj = {}
 
-    while (true) {
-      const { value } = iterator.next()
-      if (value === this.dictionaryEnd) break
-      const objKey = this.decodeByteArray(iterator, value).toString('utf8')
+    for (const byte of iterator) {
+      if (byte === this.dictionaryEnd) break
+      const objKey = this.decodeByteArray(iterator, byte).toString('utf8')
       const { value: nextValue } = iterator.next()
       const objValue = this.decodeNextObject(iterator, nextValue)
       obj[objKey] = objValue
