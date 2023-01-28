@@ -116,8 +116,8 @@ class BEncoding {
 
   /**
    *
-   * @param {IterableIterator<number>} iterator
-   * @return {Array}
+   * @param {IterableIterator<number>} iterator - buffer iterator
+   * @return {Array} a list of values
    */
   decodeList(iterator) {
     const arr = []
