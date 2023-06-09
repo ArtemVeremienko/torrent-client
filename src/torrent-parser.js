@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import bencode from 'bencode'
 import { createHash } from 'node:crypto'
 
-export function open(filepath) {
+export function open(filepath, encoding) {
   const torrentFile = readFileSync(filepath)
-  return bencode.decode(torrentFile)
+  return bencode.decode(torrentFile, encoding)
 }
 
 export function size(torrent) {

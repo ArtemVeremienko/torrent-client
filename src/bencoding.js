@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import process from 'node:process'
+import { argv } from 'node:process'
 
 /**
  * @enum {number}
@@ -153,8 +153,8 @@ class BEncoding {
 const decoder = new BEncoding('utf8')
 
 console.group('Torrents')
-console.log(decoder.decodeFile(process.argv[2]))
-console.log(decoder.decodeFile(process.argv[2]))
+console.log(decoder.decodeFile(argv[2]))
+console.log(decoder.decodeFile(argv[2]))
 console.groupEnd()
 
 console.group('Tests')

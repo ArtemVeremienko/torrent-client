@@ -33,10 +33,10 @@ export function udpSend(
   socket,
   message,
   rawUrl,
-  callback = console.log.bind(null, 'UDP SEND: ')
+  callback = console.log.bind(null, 'UDP SEND CALLBACK: ')
 ) {
   const { port, hostname, protocol } = parse(rawUrl)
-  console.log({ rawUrl, hostname, port, protocol })
+  console.log('URL: ', { rawUrl, hostname, port, protocol })
   socket.send(message, 0, message.length, port, hostname, callback)
 }
 
@@ -68,7 +68,7 @@ export function parseConnResp(resp) {
   }
 }
 
-export function buildAnnounceReq(connId, torrent, port = 6881) {
+export function buildAnnounceReq(connId, torrent, port = 6969) {
   const buf = Buffer.allocUnsafe(98)
 
   // connection id
@@ -90,7 +90,7 @@ export function buildAnnounceReq(connId, torrent, port = 6881) {
   // event
   buf.writeUInt32BE(0, 80)
   // ip address
-  buf.writeUInt32BE(0, 80)
+  buf.writeUInt32BE(0, 84)
   // key
   randomBytes(4).copy(buf, 88)
   // num want
